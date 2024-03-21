@@ -102,7 +102,9 @@ uint64_t stringToBinary(string kmer){
     //     curr_bv_hi = std::stoull(bv_line.substr(64,bv_line.length()-64), nullptr, 2);
     // } 
     //int hd = hammingDistance(prev_bv_hi, curr_bv_hi);
-    cout<<bv_line<<" "<<curr_bv_lo<<endl;
+    
+    
+    //cout<<bv_line<<" "<<curr_bv_lo<<endl;
 
     return curr_bv_lo;
 } 
