@@ -153,15 +153,13 @@ int hammingDist(string str1, string str2)
     return count; 
 } 
 
-void getSketch(double threshold, vector<uint64_t>& sketch_kmers){//threshold is the minimum value of the sketch to be considered
-    //vector<string> sketch_kmers;
-
+void getSketch(double threshold, vector<uint64_t>& sketch_kmers, vector<int>& sketch_counts){//threshold is the minimum value of the sketch to be considered
     for(int i=0; i< kmer_binary_values.size(); i++){
         uint64_t kmer = kmer_binary_values[i];
         if(kmer_binary_to_real_value(kmer) <= threshold){
             //cout << kmer << " "<< kmer_to_real_value(kmer)<< endl;
-            //sketch_kmers.push_back(kmer);
             sketch_kmers.push_back(kmer_binary_values[i]);
+            sketch_counts.push_back(counts[i]);
         }  
     }
     cout<< "Number of original kmers: " << kmer_binary_values.size() << endl;
@@ -169,10 +167,9 @@ void getSketch(double threshold, vector<uint64_t>& sketch_kmers){//threshold is 
 }
 
 
-
-
-
 int hammingDistance (uint64_t x, uint64_t y) {
+
+// Let x and y be the 2-bit encoding of two kmers.
 
 // let zeven = (x with every even position zeroed out) XOR (y with every
 // even position zeroed out)
@@ -183,8 +180,6 @@ int hammingDistance (uint64_t x, uint64_t y) {
     // std::bitset<64> yo(y&zodd_t); // Assuming a 64-bit binary representation
     // std::bitset<64> xb(x); // Assuming a 64-bit binary representation
     // std::bitset<64> yb(y); // Assuming a 64-bit binary representation
-    
-
 
     //     //cout<<xb.to_string()<<" "<<yb.to_string()<<endl;
         uint64_t oddt = (x&zodd_t)^(y&zodd_t);
@@ -211,33 +206,32 @@ int hammingDistance (uint64_t x, uint64_t y) {
 
 
 
-// Let x and y be the 2-bit encoding of two kmers.
-
-// let zeven = (x with every even position zeroed out) XOR (y with every
-// even position zeroed out)
-// let zodd be similarly defined
-// HD(x,y) = popcount(zeven OR zodd)
-
 
 inline unsigned int num_pair(int n){
     return (n*n - n)/2;
 }
 
 void getHDHistogram(double threshold){
-    vector<uint64_t> kmers_binary;
-    getSketch(threshold, kmers_binary); 
+    vector<uint64_t> sketch_kmers_binary;
+    vector<int> sketch_kmers_count;
+
+    getSketch(threshold, sketch_kmers_binary, sketch_kmers_count); 
     vector<int> hd_histogram(K+1, 0);
-    for (int i = 0; i < kmers_binary.size(); i++){
-        if(counts[i] > 1){
-            hd_histogram[0] += num_pair(counts[i]); 
+    for (int i = 0; i < sketch_kmers_binary.size(); i++){
+        for (int j = 0; j < sketch_kmers_binary.size(); j++){
+            int hd = hammingDistance(sketch_kmers_binary[i], sketch_kmers_binary[j]);
+            hd_histogram[hd] += sketch_kmers_count[j];
         }
-        for (int j = i+1; j < kmers_binary.size(); j++){
-            //int hd = hammingDistance(stringToBinary(kmers[i]), stringToBinary(kmers[j]));
-            //int hd = hammingDist(kmers[i], kmers[j]);
-            int hd = hammingDistance(kmers_binary[i], kmers_binary[j]);
-            //hd_histogram[hd] += 1;
-            hd_histogram[hd] += counts[i]*counts[j];
-        }
+        // if(counts[i] > 1){
+        //     hd_histogram[0] += num_pair(counts[i]); 
+        // }
+        // for (int j = i+1; j < sketch_kmers_binary.size(); j++){
+        //     //int hd = hammingDistance(stringToBinary(kmers[i]), stringToBinary(kmers[j]));
+        //     //int hd = hammingDist(kmers[i], kmers[j]);
+        //     int hd = hammingDistance(sketch_kmers_binary[i], sketch_kmers_binary[j]);
+        //     //hd_histogram[hd] += 1; // if count 1
+        //     hd_histogram[hd] += counts[i]*counts[j];
+        // }
     }
     for (int i = 0; i < hd_histogram.size(); i++){
         cout << i << " " << hd_histogram[i] << endl;
@@ -247,14 +241,7 @@ void getHDHistogram(double threshold){
 
 
 int main(int argc, char *argv[]) {
-    for (int i = 0; i < 32; ++i) {
-        zodd += "01";
-    }
-    for (int i = 0; i < 32; ++i) {
-        zeven += "10";
-    }
-    zodd_t = std::stoull(zodd, nullptr, 2);
-    zeven_t = std::stoull(zeven, nullptr, 2);
+
     // cout<<kmer_to_real_value("ATTTTTAAAAAAAATATATATGGATATATA");
     // exit(1);
     // string kmer1="CTTTTTAAAAAAAATATATATGGATATATA";
@@ -263,10 +250,20 @@ int main(int argc, char *argv[]) {
     // exit(1);
     read_kmers("kmers.txt"); // K IS SET
 
-    
+
+    for (int i = 0; i < K+2; ++i) { //i<32 for K=30
+        zodd += "01";
+    }
+    for (int i = 0; i < K+2; ++i) {
+        zeven += "10";
+    }
+    zodd_t = std::stoull(zodd, nullptr, 2);
+    zeven_t = std::stoull(zeven, nullptr, 2);
+
 
     double value = std::stod(argv[1]);
     getHDHistogram(value);
+
     //std::string kmer = "AAAAAAAAATAAAAAAAAAA";
     //double real_value = kmer_to_real_value(kmer);
     //std::cout << "Real value for k-mer " << kmer << ": " << real_value << std::endl;
