@@ -1,0 +1,9 @@
+num_replicates 20 input_s stress_random_lenk L 1000 r 0.01 k 5 estimate 5.14198 |I|_mean 8.85 |I|_sd 0.653835 L(1-q) 950.99 r_prime 0.611502 theoretical_err 5.61217 observed_err 3.70802
+num_replicates 20 input_s stress_random_lenk L 1000 r 0.01 k 10 estimate 10.4163 |I|_mean 18.35 |I|_sd 1.82414 L(1-q) 904.382 r_prime 0.329554 theoretical_err 23.6797 observed_err 7.93371
+num_replicates 20 input_s stress_random_lenk L 1000 r 0.01 k 15 estimate 13.0796 |I|_mean 23.15 |I|_sd 2.5549 L(1-q) 860.058 r_prime 0.222017 theoretical_err 34.9711 observed_err 10.0704
+num_replicates 20 input_s stress_random_lenk L 1000 r 0.01 k 20 estimate 20.2731 |I|_mean 36.35 |I|_sd 3.55352 L(1-q) 817.907 r_prime 0.152723 theoretical_err 85.4097 observed_err 16.0769
+num_replicates 20 input_s stress_random_lenk L 1000 r 0.01 k 25 estimate 25.9156 |I|_mean 43.55 |I|_sd 8.24909 L(1-q) 777.821 r_prime 0.117815 theoretical_err 135.466 observed_err 17.6344
+num_replicates 20 input_s stress_random_lenk L 1000 r 0.01 k 30 estimate 20.89 |I|_mean 36.95 |I|_sd 3.35373 L(1-q) 739.7 r_prime 0.104112 theoretical_err 72.8188 observed_err 16.06
+num_replicates 20 input_s stress_random_lenk L 1000 r 0.01 k 35 estimate 28.5273 |I|_mean 50.15 |I|_sd 6.9446 L(1-q) 703.448 r_prime 0.0819531 theoretical_err 151.222 observed_err 21.6227
+num_replicates 20 input_s stress_random_lenk L 1000 r 0.01 k 40 estimate 41.214 |I|_mean 69.3 |I|_sd 14.5193 L(1-q) 668.972 r_prime 0.0645548 theoretical_err 313.334 observed_err 28.086
+num_replicates 20 input_s stress_random_lenk L 1000 r 0.01 k 45 estimate 28.0596 |I|_mean 50.35 |I|_sd 3.66436 L(1-q) 636.185 r_prime 0.0642592 theoretical_err 110.383 observed_err 22.2904

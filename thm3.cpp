@@ -2,9 +2,7 @@
 #include <random>
 #include <string>
 #include<set>
-
-
-
+#include<fstream>
 
 using namespace std;
 
@@ -115,9 +113,10 @@ class SimParams{
     
 };
 
+// k should be greater than alpha*log2(L)
 double get_alpha(double r){
-        return 1/(2 + log2(1/(1-r)));
-    }
+    return 1/(2 + log2(1/(1-r)));
+}
 
 class Thm3{
 
@@ -163,66 +162,161 @@ class Thm3{
     }
 };
 
+string readString(string filename){
+    string randomString;
+    std::ifstream file(filename); 
+    if (file.is_open()) {
+        if (std::getline(file, randomString)) { 
+            //std::cout << "Line read from file: " << line << std::endl;
+            //L = randomString.length();
+        } else {
+            std::cerr << "File is empty." << std::endl;
+        }
+        file.close(); 
+    } else {
+        std::cerr << "Unable to open file." << std::endl;
+    }
+    return randomString;
+}
+string readSubstring(string filename, int L){
+    std::ifstream file(filename);
+    std::string line;
 
-int main() {
-    
-    
-    double alpha = 10;
+    if (file.is_open()) {
+        file.seekg(0, std::ios::end); // Get the size of the file
+        std::streampos fileSize = file.tellg();
+        file.seekg(0, std::ios::beg);
+
+        //std::srand(std::time(nullptr)); // Generate a random starting position within the file
+        std::streampos startPos = (std::rand() % (int(fileSize) - L));
+ 
+        // Move to the random starting position
+        file.seekg(startPos);
+
+        // Read 100 characters from the file
+        char buffer[L+1]; // Buffer to hold 100 characters + null terminator
+        file.read(buffer, L);
+        buffer[L] = '\0'; // Null terminate the string
+
+        // Assign the buffer content to the string
+        line = buffer;
+
+        //cout<< "sp" << startPos << " " <<std::rand() <<endl;
+        //std::cout << "Random "<< L <<" characters from the file: " << line << std::endl;
+
+        file.close(); // Close the file
+    } else {
+        std::cerr << "Unable to open file." << std::endl;
+    }
+    return line;
+}
+
+double calculateMean(const std::vector<int>& numbers) {
+    double sum = 0.0;
+    for (const auto& num : numbers) {
+        sum += num;
+    }
+    return sum / numbers.size();
+}
+
+double calculateStandardDeviation(const std::vector<int>& numbers) {
+    double mean = calculateMean(numbers);
+    double squaredDiffSum = 0.0;
+    for (const auto& num : numbers) {
+        double diff = num - mean;
+        squaredDiffSum += diff * diff;
+    }
+    double variance = squaredDiffSum / numbers.size();
+    return std::sqrt(variance);
+}
+
+
+int main (int argc, char* argv[]){
+
+    //do for different r
+    srand(time(nullptr));
+
     unsigned long L = 10000;
-    double k = log2(1000)*alpha;
+    double alpha = -1;
+    int k = -1;
     double r = 0.01;
 
+    bool justGetMin = false;
+    string filename="";
 
-    Thm3 thm3(k, L, r);
-    cout<<thm3.k<<" "<<thm3.L<<" " << thm3.error_term()<<" "<<thm3.constraint_check()<<endl;
+    vector<string> args(argv + 1, argv + argc);
+    for (auto i = args.begin(); i != args.end(); ++i) {
+            if (*i == "-h" || *i == "--help") {
+                cout << "Syntax: -i <input-file> -a <alpha> -l <length> -r <mutation-rate> -p [getminalpha and exit] -k <kmer-size>" << endl;
+                return 0;
+            } else if (*i == "-a") {
+                alpha = stod(*++i);
+            } else if (*i == "-p") {
+                justGetMin = true;
+            } else if (*i == "-r") {
+                r = stod(*++i);
+            } else if (*i == "-l") {
+                L = stoull(*++i);
+            } else if (*i == "-k") {
+                k = stoi(*++i);
+            } else if (*i == "-i") {
+                filename = (*++i);
+            } 
+    }
 
+    if(justGetMin){
+        double min_alpha = get_alpha(r);
+        int min_k = log2(L)*min_alpha;
+        cout<<"minAlpha "<< min_alpha<< " minK "<< min_k <<endl;
+        return 0;
+    }
+    double min_alpha = get_alpha(r);
+    if(alpha == -1){
+        alpha = get_alpha(r);
+    }
+    if(k==-1){
+        k = log2(L)*alpha;
+    }
     
-    k = log2(L)*alpha;
-    thm3 = Thm3(k, L, 0.01);
-    cout<<thm3.k<<" "<<thm3.L<<" "<<thm3.error_term()<<" "<<thm3.constraint_check()<<endl;
-
-
-    alpha = get_alpha(r);
-    cout<<"Min Alpha "<< alpha<<endl;//r = 0.01 alpha = 0.5
-    alpha = 70; //alpha 50
-    cout<<"Alpha "<< alpha<<endl;
-    k = log2(L)*alpha;
-    thm3 = Thm3(k, L, r);
-    cout<<thm3.k<<" "<<thm3.L<<" "<<thm3.error_term()<<" "<<thm3.constraint_check()<<endl;
-
-
+    Thm3 thm3(k, L, r);
     SimParams sim(k, L, r); //k, L, r
     int length = sim.get_n();
 
-    
-
-    std::string randomString = generateRandomString(length);
-    std::string mutatedString = generateMutatedString(randomString, sim.r);
-    //do this random string generation 1000 times
-    double mean = 0;
-
-    int num_replicates = 100;
-    for(int i=0; i<num_replicates; i++){
-        randomString = generateRandomString(length);
-        mutatedString = generateMutatedString(randomString, sim.r);
-        mean+=intersect_size(randomString, mutatedString, int(k));
-
-        if(i<5)
-        cout<<int(k)<< "|I|: "<<intersect_size(randomString, mutatedString, int(k))<<endl;
-        //cout<<"L(1-q)"<<sim.L*(1-sim.get_q())<<endl;
+    std::string randomString;
+    filename="";
+    //filename="/Users/amatur/code/downloads/t2t_chr21.sset";
+    if (filename!=""){
+        randomString = readSubstring(filename, length);
     }
-    mean/=1.0*num_replicates;
+    double mean = 0;
+    int num_replicates = 100; //do this random string generation 100 times
+    vector<int> values(num_replicates);
+    
+    for(int i=0; i<num_replicates; i++){
+        
+        if (filename==""){
+            randomString = generateRandomString(length);
+        }
+        //else{
+        //     randomString = readSubstring(filename, length);
+        // }
+        
+        std::string mutatedString = generateMutatedString(randomString, sim.r);
+        int Isize = intersect_size(randomString, mutatedString, int(k));
+        mean+=Isize;
+        values[i] = Isize;
+        //if(i<5)
+        //cout<<int(k)<< "|I|: "<<intersect_size(randomString, mutatedString, int(k))<<endl;
+    }
+    mean /= 1.0*num_replicates;
 
 
     // std::cout << "Random string of length " << length << ": " << randomString << std::endl;
     // std::cout << "Mutated string of length " << length << ": " << mutatedString << std::endl;
 
-    cout<<"k"<< int(k)<< " |I|: "<<mean<<endl;
-    cout<<"L(1-q)"<<sim.L*(1-sim.get_q())<<endl;
+    // cout<<"k"<< int(k)<< " |I|: "<<mean<<endl;
+    // cout<<"L(1-q)"<<sim.L*(1-sim.get_q())<<endl;
 
+    cout<<"r "<<r<<  " min_alpha " << min_alpha << " k "<< k << " alpha " << alpha<<" |I| "<<mean<<" L(1-q) "<<sim.L*(1-sim.get_q())<<" sd "<<calculateStandardDeviation(values)<<" err "<< thm3.error_term()<<" check "<<thm3.constraint_check()<<endl;
 
-
-    // TODO
-    // do a plot alpha, k, |I|, L(1-q)
-    // run it on ecoli 10000 bp
 }

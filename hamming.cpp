@@ -93,10 +93,34 @@ std::string encode_kmer(const std::string& kmer) {
     return encoded_kmer;
 }
 
+
+vector<uint64_t> stringToBinaryVec(string kmer){
+    int K = kmer.length();
+    string bv_line = encode_kmer(kmer);
+    vector<uint64_t> curr_bv(ceil(K/32));
+    for (int i = 0; i< ceil(K/32); i++){
+        if(2*K>i*64){
+            curr_bv[i] = std::stoull(bv_line.substr(64*i,std::min(64, 2*K-i*64)), nullptr, 2);
+        }
+    }
+    return curr_bv;
+}
+
 uint64_t stringToBinary(string kmer){
     string bv_line = encode_kmer(kmer);
     //int K = 30;
     uint64_t curr_bv_lo = std::stoull(bv_line.substr(0,std::min(64, 2*K)), nullptr, 2);
+
+
+    // if(2*K>64){
+    //     uint64_t curr_bv2 = std::stoull(bv_line.substr(64,std::min(64, 2*K-1*64)), nullptr, 2);
+    // }
+    // if(2*K>2*64){
+    //     uint64_t curr_bv2 = std::stoull(bv_line.substr(2*64,std::min(64, 2*K-2*64)), nullptr, 2);
+    // }
+
+    
+
     // uint64_t curr_bv_hi = 0;
     // if(K >= 64){
     //     curr_bv_hi = std::stoull(bv_line.substr(64,bv_line.length()-64), nullptr, 2);
@@ -209,6 +233,16 @@ int hammingDistance (uint64_t x, uint64_t y) {
 
 
 
+int hammingDistance (vector<uint64_t>& x, vector<uint64_t>& y) {
+    int sum = 0;
+    for (int i = 0; i< x.size(); i++){
+        sum += hammingDistance(x[i], y[i]);
+    }
+    return sum;
+}
+
+
+
 inline unsigned int num_pair(int n){
     return (n*n - n)/2;
 }
@@ -242,6 +276,17 @@ void getHDHistogram(double threshold){
 }
 
 
+void hammingDistanceGlobalSet(){
+    for (int i = 0; i < K+2; ++i) { //i<32 for K=30
+        zodd += "01";
+    }
+    for (int i = 0; i < K+2; ++i) {
+        zeven += "10";
+    }
+    zodd_t = std::stoull(zodd, nullptr, 2);
+    zeven_t = std::stoull(zeven, nullptr, 2);
+}
+
 int main(int argc, char *argv[]) {
 
     // cout<<kmer_to_real_value("ATTTTTAAAAAAAATATATATGGATATATA");
@@ -252,17 +297,8 @@ int main(int argc, char *argv[]) {
     // exit(1);
     read_kmers("kmers.txt"); // K IS SET
 
-
-    for (int i = 0; i < K+2; ++i) { //i<32 for K=30
-        zodd += "01";
-    }
-    for (int i = 0; i < K+2; ++i) {
-        zeven += "10";
-    }
-    zodd_t = std::stoull(zodd, nullptr, 2);
-    zeven_t = std::stoull(zeven, nullptr, 2);
-
-
+    hammingDistanceGlobalSet();
+    
     double value = std::stod(argv[1]);
     getHDHistogram(value);
 
