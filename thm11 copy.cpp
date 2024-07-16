@@ -6,7 +6,7 @@
 
 using namespace std;
 //std::string randomString;
-int hd_si_tau[1000][1000];
+int hd_s_tau[1000][1000];
 
 
 string zodd="";
@@ -218,7 +218,7 @@ void precompute_si_tau_hd_result_thm11(SimParams& sim, string& s){
         string s_i = (s.substr(i, k));
         for(int j = 0 ; j < s_vector.size(); j++ ){
             string tau = s_vector[j]; //FiX 
-            hd_si_tau[i][j] = hammingDist(s_i, tau);
+            hd_s_tau[i][j] = hammingDist(s_i, tau);
             tau_join(tau, tau_joins[j]);
         }
     }
@@ -237,7 +237,7 @@ void precompute_si_tau_hd_result_thm11(SimParams& sim, string& s){
 
         
         for(int i = 0; i< L; i++){ 
-            double pp=pow(p, hd_si_tau[i][j]);
+            double pp=pow(p, hd_s_tau[i][j]);
             double pp2 = pow(pp,2);
 
             sum_top -= pp;
@@ -246,14 +246,14 @@ void precompute_si_tau_hd_result_thm11(SimParams& sim, string& s){
 
 
             for(int delta = 1; delta<=k; delta++){
-                sum_bottom2+= -2*pow(p, hd_si_tau[i][j] + hd_si_tau[i+delta][j] );
+                sum_bottom2+= -2*pow(p, hd_s_tau[i][j] + hd_s_tau[i+delta][j] );
             }
 
             for (int t = 0; t< tau_joins[j].size(); t++){
                 string joinedString = tau_joins[j][t];
                 int delta = 2*k - joinedString.length();//len = 2k -delta
 
-                //sum_bottom2+= -2*pow(p, hd_si_tau[i][j] + hd_si_tau[i+delta][j] );
+                //sum_bottom2+= -2*pow(p, hd_s_tau[i][j] + hd_s_tau[i+delta][j] );
 
                 string s_i_len_same_as_joinedString = s.substr(i, joinedString.length() );
                 int d = hammingDist(s_i_len_same_as_joinedString, joinedString);

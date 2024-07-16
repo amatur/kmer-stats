@@ -3,6 +3,8 @@
 #include <string>
 #include<set>
 #include<fstream>
+#include<algorithm>
+#include<iomanip>
 
 using namespace std;
 int hd_s_tau[1000][1000];
@@ -31,11 +33,16 @@ class FastHammingDistance{
     }
 };
 
+
 class SimParams{
     public:
-    int k;
-    unsigned long L;
-    double r;
+        
+        int k;
+        unsigned long L;
+        double r;
+
+    SimParams(){
+    }
 
     SimParams(int k, unsigned long L, double r){
         this->k = k;
@@ -207,7 +214,8 @@ void tau_join(string kmer, vector<string>& retvec){
             }else{
                  retvec.push_back(kmer+kmer.substr(delta, k-delta));
             }
-           
+            //len=|K|+|K|-delta
+            //
         }
        
         // kmer[0] == kmer[k-1]
@@ -220,6 +228,33 @@ void tau_join(string kmer, vector<string>& retvec){
         // kmer[2] = kmer[k-1]
     }
     
+}
+
+double pow(double base, int exp){
+    double val = pow(base, (double)exp);
+    //cout<< base<< "^" << exp<<"=" <<val<<endl; 
+
+    if(abs(base)>0 && abs(base)<1 && exp>0 && val > base){
+        cout<<"error pow "<<val<<endl;
+        throw ("error");
+    }
+
+    if(val != 0.0 && val < std::numeric_limits<double>::min()){
+        cout<<"underflow "<<val<<endl;
+        throw std::underflow_error("underflow");
+    }
+
+    return val;
+}
+void value_checker(double val){
+    if(val != 0.0 && val < std::numeric_limits<double>::min()){
+        cout<<"underflow "<<val<<endl;
+        throw std::underflow_error("underflow");
+    }
+    if(std::isinf(val)){
+        cout<<"overflow "<<val<<endl;
+        throw std::overflow_error("overflow");
+    }
 }
 
 void precompute_si_tau_hd_result_thm11(SimParams& sim, string& s){
@@ -267,10 +302,10 @@ void precompute_si_tau_hd_result_thm11(SimParams& sim, string& s){
 
 
             for(int delta = 1; delta<=k; delta++){
-                if(i+delta>=L){
-                    break;
-                }
-                sum_bottom2_p1+= -2*pow(p, hd_s_tau[i][j] + hd_s_tau[i+delta][j] );
+                // if(i+delta>=L){
+                //     break;
+                // }
+                sum_bottom2_p1+= -2*pow(p, hd_s_tau[i][j] + hd_s_tau[i+k-delta][j] );
                 //cout<<sum_bottom2_p1<<" sp "<< " delta " << delta << " k "<<k<< " "<< hd_s_tau[i][j] << " "<< hd_s_tau[i+delta][j]  << " " << i+delta<<endl;
             }
             
@@ -281,7 +316,7 @@ void precompute_si_tau_hd_result_thm11(SimParams& sim, string& s){
                 //sum_bottom2+= -2*pow(p, hd_s_tau[i][j] + hd_s_tau[i+delta][j] );
 
                 string s_i_len_same_as_joinedString = s.substr(i, joinedString.length() );
-                if(s_i_len_same_as_joinedString.length()==joinedString.length() ){
+                if(s_i_len_same_as_joinedString.length()==joinedString.length() && delta!=k){
                     int d = hammingDist(s_i_len_same_as_joinedString, joinedString);
                     sum_bottom2_p2 += 2*pow(p,d)/(pow(1-r, delta));
                 }
@@ -290,21 +325,25 @@ void precompute_si_tau_hd_result_thm11(SimParams& sim, string& s){
             }
         }
         sum_bottom2= sum_bottom2_p1 + sum_bottom2_p2;
-        // cout<<"sum top "<<sum_top<<endl;
-        // cout<<"sum b1 "<<sum_bottom1<<endl;
-        // cout<<"sum b2 p1 "<<sum_bottom2_p1<<endl;
-        // cout<<"sum b2 p2 "<<sum_bottom2_p2<<endl;
+
+        cout<<"for tau "<<j<<" "<<s_vector[j]<<endl;
+        cout<<"sum top = "<<sum_top<<endl;
+        cout<<"sum b1 = "<<sum_bottom1<<endl;
+        cout<<"sum b2 p1 = "<<sum_bottom2_p1<<endl;
+        cout<<"sum b2 p2 = "<<sum_bottom2_p2<<endl;
         
 
-        // cout<<"sum b2 "<<sum_bottom2<<endl;
+        cout<<"sum b2 ="<<sum_bottom2<<endl;
 
-        // cout<<"sum_top / sqrt(sum_bottom1 + sum_bottom2 "<<sum_top / sqrt(sum_bottom1 + sum_bottom2)<<endl;
+        cout<<"sum_top / sqrt(sum_bottom1 + sum_bottom2 = "<<sum_top / sqrt(sum_bottom1 + sum_bottom2)<<endl;
+
+
 
         if (std::isinf(sum_bottom2_p1) && sum_bottom2_p1 < 0) {
             cout<<"Error "<<j<<" "<< s_vector[j]<<endl;
              exit(1);
         }
-        double sigma_tau = sqrt(sum_bottom1 + sum_bottom2);
+        double sigma_tau = sqrt(sum_bottom1 + sum_bottom2); //variance of tau
         
         
         const double pi = M_PI; // Value of pi
@@ -437,8 +476,62 @@ class ResultAggregator{
     public:
         vector<int> isizes;
 
-    double isize_mean;
-    double isize_sd;
+        double isize_mean;
+        double isize_sd;
+
+
+        vector<double> test_vals_xtau;
+        double test_vals_xtau_mean;
+        double test_vals_xtau_sd;
+
+        //vector<string> labels = {"r", "L","k", "num_reps", "estimate", "mean", "sd", "variance", "abs_error", "rel_error", "fixed_tau"};
+        vector<string> labels = {"r", "L","k", "num_reps", "estimate", "mean", "sd", "variance", "fixed_tau"};
+
+        vector<string> values;
+
+    
+        template<typename T>
+        void put_values(T v){
+            values.push_back(to_string(v));
+        }
+
+
+        // = {"num_reps", "estimate", "mean", "sd", "variance", "abs_error", "rel_error"};
+
+
+    double relative_error(double estimate, double mean){
+        return abs((estimate-mean)/mean);
+    }
+
+    void diffReport(int num_replicates, double estimate, double mean, double sd, double r, int L, int k, string fixed_tau){
+
+        put_values(r);
+        put_values(L);
+        put_values(k);
+        put_values(num_replicates);
+        put_values(estimate);
+        put_values(mean);
+        put_values(sd);
+        put_values(sd*sd);
+        // put_values(abs(estimate-mean));
+        // put_values(relative_error(estimate, mean));
+        values.push_back(fixed_tau);
+
+        for(int i = 0; i< labels.size(); i++){
+            std::cout << std::fixed << std::setprecision(2);
+            cout<<labels[i]<<" "<<values[i]<<" ";
+        }
+        cout<<endl;
+
+        /*
+        for(int i = 0; i< labels.size(); i++){
+            cout<<values[i]<<" ";
+        }
+        cout<<endl;
+        */
+        
+        //cout<<"num_reps "<< num_replicates<< " estimate "<<estimate<<" mean "<<mean<<" sd "<<sd<<" variance "<<sd*sd<<" abs_error "<<abs(estimate-mean)<<" rel_error "<<relative_error(estimate, mean)<<endl;
+    }
 
     double calculateMean(const std::vector<int>& numbers) {
         double sum = 0.0;
@@ -502,6 +595,230 @@ class ResultAggregator{
 };
 
 
+class Thm11 {
+    public:
+        Thm11() {}; // Provide a definition for the default constructor
+
+        int k = 8;
+        double r = 0.01;
+        unsigned long L = 17;
+        int n = L+k-1;
+        int fixed_tau_index_j = 0;
+        
+        //set by call to init
+        string fixed_string_s; 
+        SimParams sim;
+        vector<string> s_kspectrum_vector;
+        vector< vector<string> > tau_joins;
+        int hd_s_tau[1000][1000];
+
+        string fixed_tau;
+
+        //saved 1 : string: TACGTACGAA, tau ACGA
+        
+        
+
+    void init(){
+        // fixed_string_s = readSubstring("/Users/amatur/code/downloads/t2t_chr21.sset", L+k-1);
+        //fixed_string_s = "AGCTTAAAGTAATTATCTAGGTGTCTGTATTTG";
+        //fixed_string_s = "AGCTTAAAGTAATTATCTAGGTGTCTGTATTTGCCT";
+
+       // L = fixed_string_s.length() - k + 1;
+        //readSubstring("/Users/amatur/code/downloads/t2t_chr21.sset", L+k-1);
+        type = 3;
+        //fixed_string_s = generateStressTestString( L+k-1, k);
+        fixed_string_s = generateRandomString( L+k-1);
+        //generateStressTestString( L+k-1, k);
+        
+        //fixed_string_s = "AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAG";
+        //  fixed_string_s = "ACGAACGAAA";
+        //  L = fixed_string_s.length() - k + 1;
+
+        fixed_string_s = "AAAAAAAAA";
+
+
+        cout<<fixed_string_s<<endl;
+        sim.k = k;
+        sim.L = L;
+        sim.r = r;
+        set<string> set1 = kspectrum(fixed_string_s, k);
+        std::vector<string> s_vector(set1.begin(), set1.end());
+        s_kspectrum_vector = s_vector;
+
+        
+        fixed_tau = s_kspectrum_vector[fixed_tau_index_j];
+        if(fixed_tau_index_j > s_kspectrum_vector.size()){
+            cout<<"Error: fixed_tau_index_j out of bounds"<<" " <<fixed_tau_index_j<<endl;
+            exit(1);
+        }
+
+        tau_joins.resize(s_kspectrum_vector.size());
+        for(int j = 0 ; j < s_kspectrum_vector.size(); j++ ){
+            string tau = s_kspectrum_vector[j]; //FiX 
+            tau_join(tau, tau_joins[j]);
+        }
+
+        for (int i = 0; i < fixed_string_s.size(); ++i) {
+            string s_i = (fixed_string_s.substr(i, k));
+            //for(int j = 0 ; j < s_kspectrum_vector.size(); j++ ){
+            for(int j = fixed_tau_index_j ; j <= fixed_tau_index_j; j++ ){
+                string tau = s_kspectrum_vector[j]; //FiX 
+                hd_s_tau[i][j] = hammingDist(s_i, tau);
+                //tau_join(tau, tau_joins[j]);
+            }
+        }
+    }
+
+    double compute_sd_estimate(){
+    
+        double p = sim.get_p();
+        
+        double sigma_tau = 777777;
+        //fix a tau: j = 0
+        for(int j = fixed_tau_index_j ; j<=fixed_tau_index_j; j++){ // not on I, length of |sp(s)|
+
+            double sum_top = 0;
+            double sum_bottom1 = 0;
+            double sum_bottom2 = 0;
+            double sum_bottom2_p1 = 0;
+            double sum_bottom2_p2 = 0;
+
+            set<int> delta_taus;
+             for (int t = 0; t< tau_joins[j].size(); t++){
+                  delta_taus.insert(2*k - tau_joins[j][t].length());
+             }
+
+            int coutcounter=0;
+            for(int i = 0; i< L; i++){ 
+                double pp = pow(p, hd_s_tau[i][j]);
+                double pp2 = pow(pp,2);
+
+                sum_top -= pp;
+                sum_bottom1 += pp/sim.get_one_minus_q() - pp2;
+                //sum_bottom1 += pp/();
+
+                int t =  tau_joins[j].size()-1;
+                string joinedString = tau_joins[j][t];
+                int delta = 2*k - joinedString.length();//len = 2k -delta
+
+                for(int o = 1; o <= k-1; o++){
+                    if(L-i-1 < o){
+                        cout<<"SHOUDL NOT HAPPEN"<<endl;
+                        break;
+                    }
+                    sum_bottom2_p1+= -2*pow(p, hd_s_tau[i][j] + hd_s_tau[i+k-o][j] );
+                    //cout<<"CC" << p<<" "<< fixed_string_s.substr(i, k) << " "<< o << " hd "<< hd_s_tau[i][j] << " " << fixed_string_s.substr(i+k-o, k) <<" hd "<< hd_s_tau[i+k-o][j] <<" " << -2*pow(p, hd_s_tau[i][j] + hd_s_tau[i+k-o][j] )<<endl;
+                    
+                    //cout<<sum_bottom2_p1<<" sp "<< " delta " << delta << " k "<<k<< " "<< hd_s_tau[i][j] << " "<< hd_s_tau[i+delta][j]  << " " << i+delta<<endl;
+                    //if(i>L+k-1 = o upper range = L - i )
+                    
+                    /*
+                    if(k-o == delta && t>=0){
+                        string s_i_len_same_as_joinedString = fixed_string_s.substr(i, joinedString.length() );
+                        if(s_i_len_same_as_joinedString.length()==joinedString.length() && delta!=k){
+                            coutcounter++;
+                            int d = hammingDist(s_i_len_same_as_joinedString, joinedString);
+                            //cout<<d<< " " << i<<" "<< s_i_len_same_as_joinedString << " "<< delta << " hd "<< hd_s_tau[i][j] << " " << joinedString<<" hd "<< hd_s_tau[i+k-delta][j] <<" " << -2*pow(p, hd_s_tau[i][j] + hd_s_tau[i+k-delta][j] )<<endl;
+
+                            sum_bottom2_p2 += 2*pow(p,d)*(pow(1-r, k+o));
+                            //cout<<(pow(1-r, delta))<<endl;
+                        }
+                                                //problem in p2
+                        //go to next delta
+                        t--;
+                        if(t>=0){
+                            joinedString = tau_joins[j][t];
+                            delta = 2*k - joinedString.length();//len = 2k -delta
+                        }
+                    }
+                    */
+                    //sum_bottom2+= -2*pow(p, hd_s_tau[i][j] + hd_s_tau[i+delta][j] );
+                    //sum_bottom2_p2 += 2*pow(p,d)/(pow(1-r, delta));
+                }
+                
+                ///*
+                for (int t = 0; t< tau_joins[j].size(); t++){
+                    string joinedString = tau_joins[j][t];
+                    int delta = 2*k - joinedString.length();//len = 2k -delta
+                    if (delta==k)
+                    {
+                        continue;
+                    }
+                    
+
+                    //sum_bottom2+= -2*pow(p, hd_s_tau[i][j] + hd_s_tau[i+delta][j] );
+                    string s_i_len_same_as_joinedString  ="";
+                    if(joinedString.length() - i + 1 > 0 && i<fixed_string_s.length()){
+                        s_i_len_same_as_joinedString = fixed_string_s.substr(i, joinedString.length() );
+                    }
+
+                    if(s_i_len_same_as_joinedString.length()==joinedString.length()){
+                    //if(delta!=k){
+                        coutcounter++;
+                        int d = hammingDist(s_i_len_same_as_joinedString, joinedString);
+                        //cout<<d<< " " << i<<" "<< s_i_len_same_as_joinedString << " "<< delta << " hd "<< hd_s_tau[i][j] << " " << joinedString<<" hd "<< hd_s_tau[i+k-delta][j] <<" " << -2*pow(p, hd_s_tau[i][j] + hd_s_tau[i+k-delta][j] )<<endl;
+
+                        sum_bottom2_p2 += 2*pow(p,d)/(pow(1-r, delta));
+                        //cout<<(pow(1-r, delta))<<endl;
+                    }
+                    //problem in p2
+                    
+                }
+                //*/
+            }
+            cout<<"Count "<<coutcounter<<endl;
+            sum_bottom2= sum_bottom2_p1 + sum_bottom2_p2;
+            cout<<"sum top "<<sum_top<<endl;
+            cout<<"sum b1 (p0) "<<sum_bottom1 / pow((1-r), 2*k) <<endl;
+            cout<<"sum b2 p1 "<<sum_bottom2_p1 / pow((1-r), 2*k) <<endl;
+            cout<<"sum b2 p2 "<<sum_bottom2_p2/ pow((1-r), 2*k) <<endl;
+            double a = sum_bottom1 / pow((1-r), 2*k) ;//0.201732;
+            double b = sum_bottom2_p1  / pow((1-r), 2*k);
+            //-20.712563;
+            //sum_bottom2_p1 / pow((1-r), 2*k) ;
+            //-20.712563;
+            double c = sum_bottom2_p2/ pow((1-r), 2*k);
+            //21.037053;
+            //
+
+            cout<<"sum b2 "<<sum_bottom2<<endl;
+
+            cout<<"sum_top / sqrt(sum_bottom1 + sum_bottom2) "<<sum_top / sqrt(sum_bottom1 + sum_bottom2)<<endl;
+
+            if (std::isinf(sum_bottom2_p1) && sum_bottom2_p1 < 0) {
+                cout<<"Error "<<j<<" "<< s_kspectrum_vector[j]<<endl;
+                exit(1);
+            }
+            //sigma_tau = pow((1-r), k)  * sqrt(sum_bottom1 + sum_bottom2); //variance of tau
+            sigma_tau = pow((1-r), k)  * sqrt(sum_bottom1 + sum_bottom2); //variance of tau
+            cout<<"ABC"<<sqrt(a+b+c)<<endl;
+            //sigma_tau = sqrt(a+b+c);
+            
+        }
+        return sigma_tau;
+    }
+
+    int sum_xi_tau(string& mutated_string, string tau){
+        int sum = 0;
+        // generate all kmer from mutated_string
+        for (int i = 0; i <= mutated_string.length() - k; ++i) {
+            std::string kmer = mutated_string.substr(i, k);
+            if(kmer==tau){
+                sum+=1;
+            }
+        }
+        if(sum<0){
+            cout<<"Error: overflow: sum_xi_tau "<<sum<<endl;
+            exit(1);
+        }
+        return sum; //return CAPITAL-X^tau
+    }
+
+};
+
+
+
+/*
 int main (int argc, char* argv[]){
     //do for different r
     srand(time(nullptr));
@@ -513,7 +830,7 @@ int main (int argc, char* argv[]){
     string filename="";
 
 
-    int num_replicates = 20; //do this random string generation 100 times
+    int num_replicates = 1; //do this random string generation 100 times
     vector<string> args(argv + 1, argv + argc);
     for (auto i = args.begin(); i != args.end(); ++i) {
             if (*i == "-h" || *i == "--help") {
@@ -537,8 +854,11 @@ int main (int argc, char* argv[]){
     //hammingDistanceGlobalSet(K);
     
     //SimParams sim(5, 100, 0.01); //k, L, r
+    L=100;
+    k=40;
+    r=0;
+    num_replicates=1;
     SimParams sim(k, L, r); //k, L, r
-
     
     ResultAggregator res;
 
@@ -570,3 +890,4 @@ int main (int argc, char* argv[]){
     //cout<<endl;
 
 }
+*/
